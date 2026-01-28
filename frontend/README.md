@@ -1,16 +1,50 @@
-# React + Vite
+# Frontend Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
+React + Vite frontend for customers + admins, backed by Tailwind-style styling, Context providers, and axios.
 
-Currently, two official plugins are available:
+### State & Context
+- `AuthContext` stores token in `localStorage`, automatically calls `/api/auth/me` on load, and exposes login/logout helpers.
+- `CartContext` persists cart to `localStorage` and exposes `place order` which POSTs `{ items: [{ productId, quantity }] }` to `/api/orders`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Setup
+1. `npm install`
+2. Create `.env` (copy from `.env.example`) with:
+   ```
+   VITE_API_URL=http://localhost:5000
+   ```
 
-## React Compiler
+## Running
+- `npm run dev`
+- `npm run build`
+- `npm run preview`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Key Pages & Routes
+### Customer
+- `/products` – product listing
+- `/product/:id` – (if implemented)
+- `/login`, `/register`
+- `/orders`, `/orders/:id`
 
-## Expanding the ESLint configuration
+### Admin
+- `/admin/products`
+- `/admin/products/new`
+- `/admin/products/:id/edit`
+- `/admin/orders`
+- `/admin/orders/:id`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## API Client
+- Centralized axios instance in `src/api/http.js`.
+- Honors `VITE_API_URL`.
+- Attaches `Authorization` header when token exists.
+
+## Testing
+- Frontend tests planned (Vitest + React Testing Library).
+
+## UI Notes
+- Minimal Tailwind-inspired classes used for layout, tables, and buttons.
+- Loading/error states are present on pages such as products/orders.
+
+## Notes
+- Admin routes rely on backend JWT + role checks.
+- Keep backend running while developing the UI.

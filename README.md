@@ -1,52 +1,44 @@
-# MERN E-commerce Platform
+# MERN Marketplace
 
-## Overview
-Full-stack shopping experience with protected user journeys, administrative controls, and a modern React/Express/MongoDB stack designed for reliability and maintainability.
+Full-stack e-commerce proof-of-concept that couples a React/Vite storefront with an Express/Mongo backend, documented by Swagger and powered by JWT-secured auth.
+
+![Demo screenshot](frontend/public/vite.svg) <!-- swap with actual screenshot if available -->
 
 ## Key Features
-- **Customer experience** – browse products, manage cart, place orders, and view order history via guarded routes and persisted context.
-- **Admin experience** – manage products, watch incoming orders, and change order status while viewing customer emails and payment-ready state.
+- **Customer:** authentication, cart persistence, place orders, view order history and details.
+- **Admin:** product CRUD, order management with status updates, role-based route protection.
 
 ## Tech Stack
-- **Frontend:** React 19, Vite, React Router, Tailwind-style classes, Axios.
-- **Backend:** Node 20, Express 5, MongoDB (via Mongoose), JWT auth, bcrypt, Stripe (placeholder for future), OpenAPI/Swagger.
-- **Testing & DevOps:** Jest + Supertest, mongodb-memory-server, GitHub Actions for CI, Swagger UI documentation.
+- **Backend:** Node 20, Express 5, MongoDB/Mongoose, bcrypt, JWT auth, Jest/Supertest (mongodb-memory-server), Swagger docs, GitHub Actions CI.
+- **Frontend:** React 19 + Vite, Tailwind-inspired utility classes, Context providers (auth/cart), axios client.
 
-## Architecture Overview
-- **Backend:** layered into routes → controllers → models, with middleware for auth and centralized utilities such as Swagger/OpenAPI and database init.
-- **Frontend:** Contexts for auth/cart, route guards for protected/admin areas, and dedicated pages for user/admin workflows.
-- **API docs:** Swagger spec served from `backend/src/swagger.js` and exposed on `/api/docs`.
+## Architecture
+- **Monorepo** with `backend/` and `frontend/`.
+- **Backend** layers: `routes` → `controllers` → `models`, with middleware for auth and Swagger served from `src/swagger.js`.
+- **Frontend** routes use `ProtectedRoute`/`AdminRoute`, `AuthContext` loads `/api/auth/me`, `CartContext` persists in localStorage.
+- **Auth flow**: access token stored in `Authorization: Bearer <token>`, `/api/auth/me` validates calls, admin status comes from the JWT `role` claim.
 
 ## Local Setup
-### Backend
-1. Copy `.env.example` (create if missing) or add a `.env` with:
-   ```env
-   PORT=5000
-   MONGODB_KEY=<your-mongo-connection-string>
-   JWT_ACCESS_SECRET=your_secret
+1. Clone repo and install deps in both packages:
+   ```bash
+   npm install        # installs root deps (if any)
+   cd backend && npm install
+   cd ../frontend && npm install
    ```
-2. Install dependencies with `npm install`.
-3. Start dev server: `npm run dev`.
-
-### Frontend
-1. Install dependencies: `cd frontend && npm install`.
-2. Start dev server: `npm run dev`.
+2. Create `.env` files in backend (copy from `.env.example`) and frontend (set `VITE_API_URL=http://localhost:5000`).
+3. Run backend: `cd backend && npm run dev`.
+4. Run frontend: `cd frontend && npm run dev`.
 
 ## Testing
-- **Run backend tests:** `npm run test:coverage` (executes Jest with mongodb-memory-server so tests never hit a real database).
-- **Coverage report:** same command produces detailed coverage output; thresholds enforced at statements ≥ 75, branches ≥ 50, functions ≥ 70, lines ≥ 75.
-- **Frontend verification:** `npm run build` in the `frontend` folder ensures production artifacts compile cleanly.
+- Backend: `npm run test` / `npm run test:coverage` (uses mongodb-memory-server via `src/tests/setup.js`, coverage thresholds enforced: statements ≥ 75%, branches ≥ 50%, functions ≥ 70%, lines ≥ 75%).
+- Frontend: `cd frontend && npm run build`.
 
 ## CI
-- GitHub Actions workflow at `.github/workflows/ci.yml`.
-- Triggers on `push` and `pull_request`.
-- Backend job installs dependencies and runs `npm run test:coverage`.
-- Frontend job installs dependencies and runs `npm run build`.
+- GitHub Actions workflow at `.github/workflows/ci.yml` runs backend tests/coverage followed by frontend build on every `push`/`pull_request`.
 
-## API Documentation
-- Swagger UI available after starting the backend: `http://localhost:5000/api/docs`.
-- Docs are generated from JSDoc comments located in `backend/src/routes`.
+## API Docs
+- Swagger UI is served at `http://localhost:5000/api/docs` courtesy of `swagger-ui-express` + `swagger-jsdoc`.
 
 ## Future Improvements
-- Add Stripe payment handling (checkout + webhook flows) and webhook secret rotation once back in Sydney.
+- Add Stripe checkout + webhook handling (Sydney sprint), implement product search/pagination, add refresh tokens and more robust security headers.
 
