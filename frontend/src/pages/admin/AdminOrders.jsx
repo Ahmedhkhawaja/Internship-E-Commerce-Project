@@ -12,6 +12,7 @@ export default function AdminOrders() {
 
     async function load() {
       try {
+        // Admin list includes user email via backend populate.
         const res = await http.get("/api/admin/orders");
 
         if (cancelled) return;
@@ -32,7 +33,7 @@ export default function AdminOrders() {
     };
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="text-sm text-gray-500">Loading...</div>;
   if (error) return <div className="text-red-600">{error}</div>;
 
   return (
@@ -40,42 +41,44 @@ export default function AdminOrders() {
       <h2 className="text-xl font-bold mb-4">All Orders</h2>
 
       {orders.length === 0 ? (
-        <div>No orders yet.</div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
+          No orders yet.
+        </div>
       ) : (
-        <ul className="space-y-3">
+        <div className="grid grid-cols-2 gap-4">
           {orders.map((order) => (
-            <li key={order._id} className="border rounded p-4">
-              <div className="flex items-start justify-between">
+            <div key={order._id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg">
+              <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                 <div>
                   <div className="font-semibold">
                     Order #{order._id.slice(-8)}
                   </div>
-                  <div className="text-sm opacity-70">
+                  <div className="text-sm text-gray-500">
                     {order.userId?.email || "Unknown user"}
                   </div>
-                  <div className="text-sm opacity-70">
+                  <div className="text-sm text-gray-500">
                     {new Date(order.createdAt).toLocaleDateString()} at{" "}
                     {new Date(order.createdAt).toLocaleTimeString()}
                   </div>
                 </div>
-                <div className="text-sm px-2 py-1 rounded border">
+                <div className="text-xs uppercase tracking-wide rounded-full border border-gray-200 px-3 py-1">
                   {order.status}
                 </div>
               </div>
 
-              <div className="mt-2 font-semibold">
+              <div className="mt-3 font-semibold text-red-600">
                 ${(order.totalCents / 100).toFixed(2)}
               </div>
 
               <Link
                 to={`/admin/orders/${order._id}`}
-                className="mt-2 inline-block underline text-sm"
+                className="mt-3 inline-flex text-sm font-semibold text-red-600"
               >
-                View details
+                View details →
               </Link>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

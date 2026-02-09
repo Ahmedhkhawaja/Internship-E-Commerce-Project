@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { http } from "../../api/http";
 
+// Admin can move orders through a simple status workflow.
 const ORDER_STATUSES = ["pending", "paid", "cancelled", "shipped", "delivered"];
 
 export default function AdminOrderDetails() {
@@ -40,6 +41,7 @@ export default function AdminOrderDetails() {
     setUpdating(true);
 
     try {
+      // Persist status updates to the backend.
       const res = await http.patch(`/api/admin/orders/${id}`, {
         status: newStatus,
       });
@@ -52,44 +54,47 @@ export default function AdminOrderDetails() {
     }
   }
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="text-sm text-gray-500">Loading...</div>;
   if (error && !order) return <div className="text-red-600">{error}</div>;
   if (!order) return <div>Order not found</div>;
 
   return (
     <div>
-      <Link to="/admin/orders" className="underline text-sm mb-4 inline-block">
+      <Link
+        to="/admin/orders"
+        className="text-sm text-gray-500 inline-flex items-center gap-2"
+      >
         ← Back to all orders
       </Link>
 
-      <h2 className="text-xl font-bold mb-2">Order Details</h2>
+      <h2 className="text-xl font-bold mt-3 mb-4">Order Details</h2>
 
-      <div className="border rounded p-4 mb-4">
-        <div className="mb-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg mb-6">
+        <div className="mb-3">
           <div className="font-semibold">Order #{order._id.slice(-8)}</div>
-          <div className="text-sm opacity-70">
+          <div className="text-sm text-gray-500">
             Customer: {order.userId?.email || "Unknown"}
           </div>
-          <div className="text-sm opacity-70">
+          <div className="text-sm text-gray-500">
             {new Date(order.createdAt).toLocaleDateString()} at{" "}
             {new Date(order.createdAt).toLocaleTimeString()}
           </div>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-4">
           <label className="block text-sm font-semibold mb-2">
-            Order Status:
+            Order Status
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {ORDER_STATUSES.map((status) => (
               <button
                 key={status}
                 onClick={() => handleStatusChange(status)}
                 disabled={updating || order.status === status}
-                className={`px-3 py-1 rounded border text-sm disabled:opacity-50 ${
+                className={`px-3 py-1 rounded-full border text-sm disabled:opacity-50 ${
                   order.status === status
-                    ? "bg-gray-200 font-semibold"
-                    : "hover:bg-gray-50"
+                    ? "bg-red-600 text-white border-red-600"
+                    : "border-gray-200 hover:border-red-600"
                 }`}
               >
                 {status}
@@ -98,26 +103,26 @@ export default function AdminOrderDetails() {
           </div>
         </div>
 
-        {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
+        {error && <div className="text-red-600 text-sm mt-3">{error}</div>}
       </div>
 
       <h3 className="font-semibold mb-3">Items</h3>
-      <ul className="space-y-2 mb-6">
+      <div className="grid gap-3 md:grid-cols-2">
         {order.items.map((item, idx) => (
-          <li key={idx} className="border rounded p-3">
+        <div key={idx} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-lg">
             <div className="font-semibold">{item.name}</div>
-            <div className="text-sm opacity-70">
+            <div className="text-sm text-gray-500">
               ${(item.priceCents / 100).toFixed(2)} × {item.quantity}
             </div>
-            <div className="mt-1">
+            <div className="mt-1 font-semibold">
               Subtotal: ${((item.priceCents * item.quantity) / 100).toFixed(2)}
             </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
-      <div className="border-t pt-4">
-        <div className="font-bold text-lg">
+      <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-lg">
+        <div className="font-bold text-lg text-red-600">
           Total: ${(order.totalCents / 100).toFixed(2)}
         </div>
       </div>

@@ -1,8 +1,21 @@
 const express = require("express");
+const { z } = require("zod");
+const { validateBody } = require("../middleware/validate");
 const { authUser } = require("../middleware/auth");
 const { createOrder, getMyOrders, getOrderById } = require("../controllers/order.controller");
 
 const router = express.Router();
+// Orders are user-only; validation ensures clean payloads.
+const orderSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        quantity: z.number().int().min(1),
+      })
+    )
+    .nonempty({ message: "Cart is empty" }),
+});
 
 /**
  * @openapi
@@ -38,7 +51,7 @@ const router = express.Router();
  *       201:
  *         description: Order created
  */
-router.post("/", authUser, createOrder);
+router.post("/", authUser, validateBody(orderSchema), createOrder);
 
 /**
  * @openapi

@@ -12,6 +12,7 @@ export default function Orders() {
 
     async function load() {
       try {
+        // Fetch current user's orders.
         const res = await http.get("/api/orders/my");
 
         if (cancelled) return;
@@ -32,12 +33,12 @@ export default function Orders() {
     };
   }, []);
 
-  if (loading) return <div className="p-6 text-xl font-semibold">Loading...</div>;
-  if (error) return <div className="p-6 text-xl font-semibold">{error}</div>;
+  if (loading) return <div className="p-6 text-sm text-gray-500">Loading...</div>;
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">My Orders</h1>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">My Orders</h1>
 
       {orders.length === 0 ? (
         <div>
@@ -47,37 +48,37 @@ export default function Orders() {
           </Link>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <div className="grid grid-cols-2 gap-4">
           {orders.map((order) => (
-            <li key={order._id} className="border rounded p-4">
+            <div key={order._id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="font-semibold">
                     Order #{order._id.slice(-8)}
                   </div>
-                  <div className="text-sm opacity-70">
+                  <div className="text-sm text-gray-500">
                     {new Date(order.createdAt).toLocaleDateString()} at{" "}
                     {new Date(order.createdAt).toLocaleTimeString()}
                   </div>
                 </div>
-                <div className="text-sm px-2 py-1 rounded border">
+                <div className="text-xs uppercase rounded-full border border-gray-200 px-3 py-1">
                   {order.status}
                 </div>
               </div>
 
-              <div className="mt-2 font-semibold">
+              <div className="mt-3 font-semibold text-red-600">
                 ${(order.totalCents / 100).toFixed(2)}
               </div>
 
               <Link
                 to={`/orders/${order._id}`}
-                className="mt-2 inline-block underline text-sm"
+                className="mt-3 inline-flex text-sm font-semibold text-red-600"
               >
-                View details
+                View details →
               </Link>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

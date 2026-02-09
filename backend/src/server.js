@@ -1,6 +1,6 @@
+const { env } = require("./config/env");
 const app = require("./app");
 const { dataBase } = require("./config/db");
-const { env } = require("./config/env");
 
 async function start () {
   await dataBase();

@@ -1,7 +1,20 @@
 const express = require("express");
+const { z } = require("zod");
 const router = express.Router();
+// Auth routes keep controllers lean by validating input here.
 const { authUser } = require("../middleware/auth");
-const { login, register, me } = require("../controllers/auth.controller");
+const { login, register, me, refresh, logout } = require("../controllers/auth.controller");
+const { validateBody } = require("../middleware/validate");
+
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+});
 
 /**
  * @openapi
@@ -30,7 +43,7 @@ const { login, register, me } = require("../controllers/auth.controller");
  *       201:
  *         description: User created with access token
  */
-router.post("/register", register);
+router.post("/register", validateBody(registerSchema), register);
 
 /**
  * @openapi
@@ -58,7 +71,7 @@ router.post("/register", register);
  *       200:
  *         description: Login successful
  */
-router.post("/login", login);
+router.post("/login", validateBody(loginSchema), login);
 
 /**
  * @openapi
@@ -74,5 +87,8 @@ router.post("/login", login);
  *         description: Authenticated user
  */
 router.get("/me", authUser, me);
+
+router.post("/refresh", refresh);
+router.post("/logout", logout);
 
 module.exports = router;

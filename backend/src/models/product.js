@@ -17,6 +17,7 @@ const products = new mongoose.Schema(
       trim: true,
     },
 
+    // Store money as integer cents to avoid floating-point issues.
     priceCents: {
       type: Number,
       required: true,
@@ -30,6 +31,7 @@ const products = new mongoose.Schema(
       maxlength: 1000,
     },
 
+    // Image URLs returned from the upload endpoint.
     images: {
       type: [String],
       default: [],

@@ -28,6 +28,25 @@ describe("Auth", () => {
     expect(res.body.foundUser.email).toBe(email);
   });
 
+  it("refreshes access token using refresh cookie", async () => {
+    const email = `refresh_${Date.now()}@test.com`;
+    const password = "Password123!";
+
+    await request(app).post("/api/auth/register").send({ email, password });
+    const loginRes = await request(app).post("/api/auth/login").send({ email, password });
+
+    expect(loginRes.statusCode).toBe(200);
+    const cookies = loginRes.headers["set-cookie"];
+    expect(Array.isArray(cookies)).toBe(true);
+
+    const refreshRes = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", cookies);
+
+    expect(refreshRes.statusCode).toBe(200);
+    expect(refreshRes.body.accessToken).toBeDefined();
+  });
+
   it("blocks /me without token", async () => {
     const res = await request(app).get("/api/auth/me");
     expect([401, 403]).toContain(res.statusCode);

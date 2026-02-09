@@ -2,6 +2,7 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 const User = require("../models/user");
 
+// Generate URL-friendly slug from product name.
 function generateSlug(name) {
   return name
     .toLowerCase()
@@ -12,6 +13,7 @@ function generateSlug(name) {
 }
 
 async function createProduct(req, res) {
+  // Slug is derived from name to keep URLs consistent.
   const slug = req.body.slug || generateSlug(req.body.name);
   const created = await Product.create({ ...req.body, slug });
   return res.status(201).json(created);
@@ -19,6 +21,7 @@ async function createProduct(req, res) {
 
 async function updateProduct(req,res) {
   const body = { ...req.body };
+  // Keep slug in sync if name changes.
   if (body.name && !body.slug) {
     body.slug = generateSlug(body.name);
   }
@@ -45,6 +48,7 @@ async function deleteProduct(req, res) {
 }
 
 async function getAllOrders(req, res) {
+  // Admin-only: include user email for order management.
   const orders = await Order.find()
     .populate("userId", "email")
     .sort({ createdAt: -1 });

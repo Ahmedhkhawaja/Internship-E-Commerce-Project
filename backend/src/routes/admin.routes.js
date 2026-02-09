@@ -1,7 +1,14 @@
 const express = require("express");
+const { z } = require("zod");
 const router = express.Router();
+// Admin-only order management endpoints.
 const { authAdmin } = require("../middleware/auth");
 const { getAllOrders, getOrderByIdAdmin, updateOrderStatus } = require("../controllers/admin.controller");
+const { validateBody } = require("../middleware/validate");
+
+const orderStatusSchema = z.object({
+  status: z.enum(["pending", "paid", "cancelled", "shipped", "delivered"]),
+});
 
 /**
  * @openapi
@@ -69,7 +76,7 @@ router.get("/orders/:id", authAdmin, getOrderByIdAdmin);
  *       200:
  *         description: Order status updated
  */
-router.patch("/orders/:id", authAdmin, updateOrderStatus);
+router.patch("/orders/:id", authAdmin, validateBody(orderStatusSchema), updateOrderStatus);
 
 module.exports = router;
 

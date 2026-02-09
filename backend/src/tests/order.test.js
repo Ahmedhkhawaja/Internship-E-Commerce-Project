@@ -1,12 +1,13 @@
 const {
-    request,
-    app,
-    createUserAndToken,
-    createAdminAndToken,
-    createProduct,
-  } = require("./helpers");
+  request,
+  app,
+  createUserAndToken,
+  createAdminAndToken,
+  createProduct,
+} = require("./helpers");
+const Product = require("../models/product");
   
-  describe("Orders (user)", () => {
+describe("Orders (user)", () => {
     it("blocks creating an order without auth", async () => {
       const res = await request(app).post("/api/orders").send({
         items: [{ productId: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -47,6 +48,33 @@ const {
       expect(res.body.totalCents).toBe(1999 * 2);
       expect(res.body.status).toBe("pending");
     });
+
+    it("rolls back reserved stock when any item fails", async () => {
+      const admin = await createAdminAndToken();
+      const user = await createUserAndToken();
+
+      const productA = await createProduct({ adminToken: admin.token });
+      const productB = await createProduct({ adminToken: admin.token });
+
+      await Product.updateOne({ _id: productA._id }, { $set: { countInStock: 1 } });
+      await Product.updateOne({ _id: productB._id }, { $set: { countInStock: 0 } });
+
+      const res = await request(app)
+        .post("/api/orders")
+        .set("Authorization", `Bearer ${user.token}`)
+        .send({
+          items: [
+            { productId: productA._id, quantity: 1 },
+            { productId: productB._id, quantity: 1 },
+          ],
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toMatch(/Not enough stock|Product unavailable/);
+
+      const refreshedA = await Product.findById(productA._id);
+      expect(refreshedA.countInStock).toBe(1);
+    });
   
     it("lists my orders at GET /api/orders/my", async () => {
       const user = await createUserAndToken();
@@ -81,5 +109,5 @@ const {
       expect(res.statusCode).toBe(403);
       expect(res.body.message).toBe("Forbidden");
     });
-  });
+});
   

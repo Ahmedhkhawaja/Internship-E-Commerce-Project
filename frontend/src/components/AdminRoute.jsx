@@ -1,8 +1,11 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../auth/AuthConttext";
+import { useSelector } from "react-redux";
+import { selectAuthLoading, selectAuthUser } from "../store/authSlice";
 
 export default function AdminRoute() {
-  const { user, loading } = useAuth();
+  // Gate admin-only routes and redirect non-admins.
+  const user = useSelector(selectAuthUser);
+  const loading = useSelector(selectAuthLoading);
 
   if (loading) return <div className="p-6">Loading...</div>;
 

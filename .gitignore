@@ -16,6 +16,7 @@ coverage/
 backend/coverage/
 frontend/dist/
 dist/
+backend/uploads/
 
 # System files
 .DS_Store

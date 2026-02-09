@@ -3,15 +3,30 @@ const Product = require("../models/product");
 
 // POST /api/orders
 async function createOrder(req, res) {
+  const items = req.body.items || [];
+  // Track reserved stock so we can roll back on failure.
+  const reserved = [];
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: "Cart is empty" });
+  }
+
+  let orderItems = [];
+  let totalCents = 0;
+
   try {
-    const items = req.body.items || [];
-
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "Cart is empty" });
+    // If any item fails, restore any stock already reserved.
+    async function rollbackReserved() {
+      if (reserved.length === 0) return;
+      await Promise.all(
+        reserved.map((r) =>
+          Product.updateOne(
+            { _id: r.productId },
+            { $inc: { countInStock: r.quantity } }
+          )
+        )
+      );
     }
-
-    let orderItems = [];
-    let totalCents = 0;
 
     for (const item of items) {
       const productId = item.productId;
@@ -21,15 +36,29 @@ async function createOrder(req, res) {
         return res.status(400).json({ message: "Invalid cart item" });
       }
 
-      const p = await Product.findById(productId);
-      if (!p || !p.isActive) {
+      // Atomic stock decrement prevents overselling under concurrency.
+      const p = await Product.findOneAndUpdate(
+        { _id: productId, isActive: true, countInStock: { $gte: quantity } },
+        { $inc: { countInStock: -quantity } },
+        { new: true }
+      );
+
+      if (!p) {
+        const existing = await Product.findById(productId);
+        if (!existing || !existing.isActive) {
+          await rollbackReserved();
+          return res.status(400).json({ message: "Product unavailable" });
+        }
+        if (existing.countInStock < quantity) {
+          await rollbackReserved();
+          return res.status(400).json({ message: `Not enough stock for ${existing.name}` });
+        }
+        await rollbackReserved();
         return res.status(400).json({ message: "Product unavailable" });
       }
 
-      if (p.countInStock < quantity) {
-        return res.status(400).json({ message: `Not enough stock for ${p.name}` });
-      }
-
+      reserved.push({ productId: p._id, quantity });
+      // Store a snapshot of item pricing to keep order history stable.
       orderItems.push({
         productId: p._id,
         name: p.name,
@@ -38,10 +67,6 @@ async function createOrder(req, res) {
       });
 
       totalCents += p.priceCents * quantity;
-
-      // simple stock decrement for now
-      p.countInStock -= quantity;
-      await p.save();
     }
 
     const order = await Order.create({
@@ -53,6 +78,16 @@ async function createOrder(req, res) {
 
     return res.status(201).json(order);
   } catch (e) {
+    if (reserved.length > 0) {
+      await Promise.all(
+        reserved.map((r) =>
+          Product.updateOne(
+            { _id: r.productId },
+            { $inc: { countInStock: r.quantity } }
+          )
+        )
+      );
+    }
     return res.status(500).json({ message: "Server error" });
   }
 }

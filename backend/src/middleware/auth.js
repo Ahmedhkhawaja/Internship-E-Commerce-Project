@@ -1,6 +1,9 @@
 const jwt = require("jsonwebtoken");
 
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "dev_access_secret";
+
 function authAdmin (req, res, next) {
+  // Admin guard: verify token then check role.
   const authHeader = req.headers.authorization;
   // Check for auth header if its present
   if (!authHeader) return res.status(401).json({ message: "Authorization header missing" });
@@ -13,7 +16,7 @@ function authAdmin (req, res, next) {
   if ("Bearer" !== bearer || !token) return res.status(401).json({ message: "Incorrect format 'Bearer <token>'"});
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const decoded = jwt.verify(token, ACCESS_SECRET);
     
     req.user = decoded
     
@@ -27,6 +30,7 @@ function authAdmin (req, res, next) {
 }
 
 function authUser (req, res, next) {
+  // User guard: verify token and attach decoded payload.
   const authHeader = req.headers.authorization;
   // Check for auth header if its present
   if (!authHeader) return res.status(401).json({ message: "Authorization header missing" });
@@ -39,7 +43,7 @@ function authUser (req, res, next) {
   if ("Bearer" !== bearer || !token) return res.status(401).json({ message: "Incorrect format 'Bearer <token>'"});
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const decoded = jwt.verify(token, ACCESS_SECRET);
     
     req.user = decoded
     next();

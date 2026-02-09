@@ -1,8 +1,26 @@
 const express = require("express");
+const { z } = require("zod");
 const router = express.Router();
+// Public list/detail plus admin CRUD in one place.
 const { authAdmin, authUser } = require("../middleware/auth");
 const { listProducts, productById } = require("../controllers/product.controller");
 const { createProduct, updateProduct, deleteProduct } = require("../controllers/admin.controller");
+const { validateBody } = require("../middleware/validate");
+
+const productCreateSchema = z.object({
+  name: z.string().min(1).max(100),
+  priceCents: z.number().min(0),
+  description: z.string().max(1000).optional(),
+  category: z.string().max(50).optional(),
+  countInStock: z.number().int().min(0),
+  images: z.array(z.string()).optional(),
+  isActive: z.boolean().optional(),
+});
+
+const productUpdateSchema = productCreateSchema.partial().refine(
+  (data) => Object.keys(data).length > 0,
+  { message: "At least one field must be provided" }
+);
 
 /**
  * @openapi
@@ -51,7 +69,7 @@ router.get("/:id", productById);
  *       201:
  *         description: Product created
  */
-router.post("/", authUser, authAdmin, createProduct);
+router.post("/", authUser, authAdmin, validateBody(productCreateSchema), createProduct);
 
 /**
  * @openapi
@@ -74,7 +92,7 @@ router.post("/", authUser, authAdmin, createProduct);
  *       200:
  *         description: Product updated
  */
-router.patch("/:id", authUser, authAdmin, updateProduct);
+router.patch("/:id", authUser, authAdmin, validateBody(productUpdateSchema), updateProduct);
 
 /**
  * @openapi

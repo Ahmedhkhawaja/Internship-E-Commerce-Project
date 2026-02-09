@@ -2,13 +2,16 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
-function accessToken(usertoken) {
-  return jwt.sign(
-    { userId: String(usertoken._id), 
-      role: usertoken.role},
-    process.env.JWT_ACCESS_SECRET,
-    { expiresIn: "15m" }
-  );
+const { signAccessToken, signRefreshToken } = require("../utils/tokens");
+const { getRefreshCookieOptions } = require("../utils/cookies");
+const { hashToken } = require("../utils/hash");
+
+const MAX_REFRESH_TOKENS = 5;
+
+// Keep refresh token list bounded to avoid unbounded growth.
+function trimRefreshTokens(tokens) {
+  if (!Array.isArray(tokens)) return [];
+  return tokens.slice(-MAX_REFRESH_TOKENS);
 }
 
 
@@ -40,14 +43,25 @@ async function register(req, res) {
     passwordHash,
   })
 
-  // Making the token
-  const token = accessToken(newUser);
+  // Making the token  
+  const accessToken = signAccessToken(newUser);
+  const refreshToken = signRefreshToken(newUser);
 
+  // Store hashed refresh token (never store raw refresh tokens).
+  newUser.refreshTokens = newUser.refreshTokens || [];
+  newUser.refreshTokens.push(hashToken(refreshToken));
+  newUser.refreshTokens = trimRefreshTokens(newUser.refreshTokens);
+  await newUser.save();
+  
+  // Set refresh cookie as httpOnly to keep it out of JS.
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+  
   // Return token + user info
   return res.status(201).json({
-    token,
-    user: {id: newUser._id, email: newUser.email, role: newUser.role}
-  })
+    token: accessToken,
+    accessToken,
+    user: { id: newUser._id, email: newUser.email, role: newUser.role },
+  });
 }
 
 
@@ -67,12 +81,89 @@ async function login(req, res) {
   if (!samePass) 
     return res.status(401).json({ message: "Invalid credentials" });
   
-  const token = accessToken(foundUser);
+  // Issue tokens on successful login.
+  const accessToken = signAccessToken(foundUser);
+  const refreshToken = signRefreshToken(foundUser);
+
+  // Store hashed refresh token for rotation tracking.
+  foundUser.refreshTokens = foundUser.refreshTokens || [];
+  foundUser.refreshTokens.push(hashToken(refreshToken));
+  foundUser.refreshTokens = trimRefreshTokens(foundUser.refreshTokens);
+  await foundUser.save();
+
+  // Set refresh cookie as httpOnly to prevent XSS access.
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
 
   return res.json({
-    token,
-    foundUser: { id:foundUser._id, email: foundUser.email, role: foundUser.role }
-  })
+    token: accessToken,
+    accessToken,
+    user: { id: foundUser._id, email: foundUser.email, role: foundUser.role },
+    foundUser: { id: foundUser._id, email: foundUser.email, role: foundUser.role },
+  });
+}
+
+async function refresh(req, res) {
+  const token = req.cookies?.refreshToken;
+  if (!token) return res.status(401).json({ message: "Missing refresh token" });
+
+  let payload;
+  try {
+    payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  } catch (e) {
+    return res.status(401).json({ message: "Invalid refresh token" });
+  }
+
+  const user = await User.findById(payload.userId);
+  if (!user) return res.status(401).json({ message: "User not found" });
+
+  const hashed = hashToken(token);
+  const allowed = (user.refreshTokens || []).includes(hashed);
+  if (!allowed) {
+    return res.status(401).json({ message: "Refresh token revoked" });
+  }
+
+  // Rotate refresh token to invalidate older cookie.
+  const newRefreshToken = signRefreshToken(user);
+  const newHashed = hashToken(newRefreshToken);
+
+  user.refreshTokens = (user.refreshTokens || []).filter((t) => t !== hashed);
+  user.refreshTokens.push(newHashed);
+  user.refreshTokens = trimRefreshTokens(user.refreshTokens);
+  await user.save();
+
+  // Set new cookie and return a fresh access token.
+  res.cookie("refreshToken", newRefreshToken, getRefreshCookieOptions());
+
+  // Issue new access token after refresh.
+  const accessToken = signAccessToken(user);
+
+  return res.json({ accessToken });
+}
+
+async function logout(req, res) {
+  const token = req.cookies?.refreshToken;
+
+  if (token) {
+    try {
+      const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      const user = await User.findById(payload.userId);
+
+      if (user) {
+        const hashed = hashToken(token);
+        user.refreshTokens = (user.refreshTokens || []).filter((t) => t !== hashed);
+        await user.save();
+      }
+    } catch (e) {
+
+    }
+  }
+
+  res.clearCookie("refreshToken", {
+    ...getRefreshCookieOptions(),
+    maxAge: 0,
+  });
+
+  return res.json({ message: "Logged out" });
 }
 
 async function me(req, res) {
@@ -83,4 +174,4 @@ async function me(req, res) {
 }
 
 
-module.exports = {register, login, me}
+module.exports = {register, login, me, logout, refresh}

@@ -17,7 +17,12 @@ const user = new mongoose.Schema(
       type: String,
       enum: ["user", "admin"],
       default: "user"
-    }
+    },
+    // Hashed refresh tokens for rotation/revocation.
+    refreshTokens: {
+      type: [String],
+      default: [],
+    },
   },
   {timestamps:true}
 );

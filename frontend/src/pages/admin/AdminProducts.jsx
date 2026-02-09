@@ -11,6 +11,7 @@ export default function AdminProducts() {
     setError("");
     setLoading(true);
     try {
+      // Admin uses same products endpoint for listing.
       const res = await http.get("/api/products");
       const items = Array.isArray(res.data) ? res.data : res.data.products || [];
       setProducts(items);
@@ -22,6 +23,7 @@ export default function AdminProducts() {
   }
 
   async function handleDelete(id) {
+    // Simple confirmation to avoid accidental deletes.
     if (!confirm("Delete this product?")) return;
 
     try {
@@ -36,38 +38,47 @@ export default function AdminProducts() {
     load();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="text-sm text-gray-500">Loading...</div>;
   if (error) return <div className="text-red-600">{error}</div>;
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-3">Products</h2>
+      <h2 className="text-xl font-bold mb-4">Products</h2>
 
       {products.length === 0 ? (
-        <div>No products.</div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
+          No products yet.
+        </div>
       ) : (
-        <ul className="space-y-2">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-2">
           {products.map((p) => (
-            <li key={p._id} className="border rounded p-3 flex items-center gap-3">
-              <div className="flex-1">
+            <div
+              key={p._id}
+              className="rounded-2xl border border-gray-200 bg-white p-4 shadow-lg flex flex-col gap-3"
+            >
+              <div>
                 <div className="font-semibold">{p.name}</div>
-                <div className="text-sm opacity-70">
+                <div className="text-sm text-gray-500">
                   ${(p.priceCents / 100).toFixed(2)} • stock: {p.countInStock}
                 </div>
               </div>
-              <button
-                onClick={() => handleDelete(p._id)}
-                className="text-red-600 underline"
-              >
-                Delete
-              </button>
-
-              <Link className="underline" to={`/admin/products/${p._id}/edit`}>
-                Edit
-              </Link>
-            </li>
+              <div className="flex gap-2">
+                <Link
+                  className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:border-red-600"
+                  to={`/admin/products/${p._id}/edit`}
+                >
+                  Edit
+                </Link>
+                <button
+                  onClick={() => handleDelete(p._id)}
+                  className="rounded-full border border-red-200 px-3 py-1 text-sm text-red-600 hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

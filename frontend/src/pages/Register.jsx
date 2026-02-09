@@ -1,15 +1,21 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../auth/AuthConttext";
+import { useDispatch, useSelector } from "react-redux";
+import { registerUser, selectAuthError } from "../store/authSlice";
+import AuthCard from "../components/ui/AuthCard";
+import TextInput from "../components/ui/TextInput";
+import PrimaryButton from "../components/ui/PrimaryButton";
 
 export default function Register() {
-  const { register } = useAuth();
+  const dispatch = useDispatch();
+  const authError = useSelector(selectAuthError);
   const nav = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -17,48 +23,61 @@ export default function Register() {
     setSubmitting(true);
 
     try {
-      await register(email, password);
+      // Register then redirect to login for a clean sign-in flow.
+      await dispatch(registerUser({ email, password })).unwrap();
       nav("/login");
     } catch (e) {
-      setError(e?.response?.data?.message || "Register failed");
+      setError(e?.message || authError || "Register failed");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="p-6 max-w-md mx-auto">
-      <h1 className="text-xl font-bold mb-4">Register</h1>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          className="w-full border p-2 rounded"
-          placeholder="Email"
+    <AuthCard
+      title="Create account"
+      subtitle="Join and start building your cart."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <TextInput
+          placeholder="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <input
-          className="w-full border p-2 rounded"
+        <TextInput
           placeholder="Password (min 8)"
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          rightElement={
+            <button
+              type="button"
+              className="text-xs text-gray-500 hover:text-gray-900"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          }
         />
 
-        {error && <div className="text-red-600 text-sm">{error}</div>}
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
-        <button
-          className="w-full border p-2 rounded hover:bg-neutral-100 disabled:opacity-60"
-          disabled={submitting}
-        >
+        <PrimaryButton disabled={submitting} type="submit">
           {submitting ? "Creating..." : "Create account"}
-        </button>
+        </PrimaryButton>
       </form>
 
-      <p className="mt-3 text-sm">
-        Already have an account? <Link className="underline" to="/login">Login</Link>
+      <p className="mt-4 text-center text-sm text-gray-500">
+        Already have an account?{" "}
+        <Link className="text-red-600 font-semibold" to="/login">
+          Sign in
+        </Link>
       </p>
-    </div>
+    </AuthCard>
   );
 }
