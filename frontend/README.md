@@ -1,11 +1,11 @@
 # Frontend Application
 
 ## Overview
-React + Vite frontend for customers + admins, backed by Tailwind-style styling, Context providers, and axios.
+React + Vite frontend for customers + admins, backed by Tailwind-style styling, Redux Toolkit state, and axios.
 
-### State & Context
-- `AuthContext` stores token in `localStorage`, automatically calls `/api/auth/me` on load, and exposes login/logout helpers.
-- `CartContext` persists cart to `localStorage` and exposes `place order` which POSTs `{ items: [{ productId, quantity }] }` to `/api/orders`.
+### State & Redux
+- `authSlice` stores token in `localStorage`, calls `/api/auth/me` on load, and exposes login/logout thunks.
+- `cartSlice` persists cart to `localStorage` and posts `{ items: [{ productId, quantity }] }` to `/api/orders`.
 
 ## Setup
 1. `npm install`
@@ -39,7 +39,7 @@ React + Vite frontend for customers + admins, backed by Tailwind-style styling, 
 - Attaches `Authorization` header when token exists.
 
 ## Testing
-- Frontend tests planned (Vitest + React Testing Library).
+- `npm run test` (Vitest + React Testing Library).
 
 ## UI Notes
 - Minimal Tailwind-inspired classes used for layout, tables, and buttons.

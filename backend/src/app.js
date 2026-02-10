@@ -1,7 +1,5 @@
 const cors = require("cors");
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
 const healthRoutes = require("./routes/health.routes");
@@ -46,13 +44,6 @@ app.use((req, res, next) => {
   }
   return express.json()(req, res, next);
 });
-
-// Ensure uploads directory exists and expose it for product images.
-const uploadsDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-app.use("/uploads", express.static(uploadsDir));
 
 function sanitizeValue(value) {
   if (typeof value === "string") {
