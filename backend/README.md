@@ -1,7 +1,7 @@
 # Backend Services
 
 ## Overview
-REST API for auth, products, orders, and admin workflows with JWT-based protection.
+REST API for auth, products, orders, admin workflows, Stripe Checkout payments, and Cloudinary image uploads.
 
 ## Node
 Built for **Node 20 (recommended)**.
@@ -16,7 +16,13 @@ Built for **Node 20 (recommended)**.
 | `PORT` | HTTP port (default 5000). |
 | `MONGODB_KEY` | Mongo URI for production/dev. |
 | `JWT_ACCESS_SECRET` | Secret for signing access tokens. |
-| `CORS_ORIGIN` | Allowed browser origin (frontend). |
+| `JWT_REFRESH_SECRET` | Secret for refresh tokens. |
+| `FRONTEND_URL` | Allowed browser origin (frontend). |
+| `STRIPE_SECRET_KEY` | Stripe secret key (test or live). |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret. |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name. |
+| `CLOUDINARY_API_KEY` | Cloudinary API key. |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret. |
 
 `.env.test` mirrors the above but is used by Jest (`src/tests/setup.js`) along with `mongodb-memory-server`.
 
@@ -42,15 +48,23 @@ Built for **Node 20 (recommended)**.
 - `GET /api/orders/my`
 - `GET /api/orders/:id`
 
+### Payments
+- `POST /api/payments/checkout`
+- `POST /api/webhooks/stripe`
+
 ### Admin Orders
 - `GET /api/admin/orders`
 - `GET /api/admin/orders/:id`
 - `PATCH /api/admin/orders/:id`
 
+### Uploads
+- `POST /api/upload` (admin, returns Cloudinary URL)
+
 ## Auth details
 - JWT sent in `Authorization: Bearer <token>`.
 - Token payload contains `{ userId, role }`.
 - `authUser` validates token; `authAdmin` checks `role === "admin"`.
+- Refresh token stored in httpOnly cookie (`/api/auth/refresh`).
 
 ## Testing
 - `npm test` (Jest + Supertest, powered by mongodb-memory-server).
@@ -73,7 +87,7 @@ Built for **Node 20 (recommended)**.
 
 ## Security notes
 - Passwords hashed with bcrypt.
-- Rate limiting/security middleware still to be layered in (helmet/xss/mongo-sanitize already installed).
+- Rate limiting and security middleware are enabled (helmet/xss/mongo-sanitize/hpp).
 
 ## Notes
 - CI workflow `.github/workflows/ci.yml` runs backend tests/coverage before frontend build.
