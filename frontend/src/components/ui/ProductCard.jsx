@@ -1,13 +1,15 @@
 export default function ProductCard({ product, onAdd }) {
   // Display product image + name + price with add-to-cart action.
   const image = product.images?.[0];
+  const baseUrl = import.meta.env.VITE_API_URL || "";
+  const imageUrl = image?.startsWith("/uploads") ? `${baseUrl}${image}` : image;
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-lg p-4 transition-transform hover:-translate-y-1">
       <div className="rounded-xl overflow-hidden bg-neutral-100 aspect-3/3">
-        {image ? (
+        {imageUrl ? (
           <img
-            src={image}
+            src={imageUrl}
             alt={product.name}
             className="h-full w-full object-cover"
             loading="lazy"
